@@ -1,11 +1,11 @@
 <template>
-   <q-layout view="hhh lpR lFr" >
+   <q-layout view="hhh lpR lFr">
       <q-header elevated>
          <q-toolbar>
             <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
             <q-toolbar-title>Ezmax Test App</q-toolbar-title>
-              <q-img src="../assets/izou-inverse.png" style="max-width: 150px"></q-img>
+            <q-img src="../assets/izou-inverse.png" style="max-width: 150px"></q-img>
          </q-toolbar>
       </q-header>
 
@@ -18,6 +18,12 @@
       <q-page-container>
          <router-view />
       </q-page-container>
+
+      <q-footer elevated class="footer-nav">
+         <q-tabs align="center">
+            <q-route-tab v-for="link in theLinks" :key="link.title" :to="link.link" :label="link.title" />
+         </q-tabs>
+      </q-footer>
    </q-layout>
 </template>
 
@@ -25,7 +31,6 @@
 import { ref } from 'vue'
 import EzMenuLinkItem from 'src/components/menu-link-item/ez-menu-link-item.vue'
 
-// To Do Ajouter une page /about (ajouter également dans les routes.ts)
 const theLinks = [
    {
       title: 'Accueil',
@@ -38,7 +43,8 @@ const theLinks = [
       caption: 'Atrappez-les tous!',
       icon: 'catching_pokemon',
       link: '/pokemon'
-   }, {
+   },
+   {
       title: 'About',
       caption: "Qu'est-ce que c'est?",
       icon: 'info',
@@ -54,9 +60,13 @@ function toggleLeftDrawer() {
 </script>
 
 <style>
-.container{
-  width: 80%;
-  margin: 10% auto;
+.container {
+   width: 80%;
+   margin: 10% auto;
 }
-
+@media screen and (min-width: 1007px) {
+   .footer-nav {
+      display: none;
+   }
+}
 </style>

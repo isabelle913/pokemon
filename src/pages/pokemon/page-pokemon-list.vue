@@ -1,58 +1,60 @@
 <template>
    <q-page>
-      <div v-if="!msgErrorToggle">
-         <div class="text-h4 q-mt-xl text-center">{{ titlePagePokemonList }}</div>
-         <div class="container q=mt-xs">
-            <q-card>
-               <q-card-section>
-                  <h6 class="q-my-xs">Vous chercher un pokemon en particulier?</h6>
+      <div class="container">
+         <div v-if="!msgErrorToggle">
+            <div class="text-h4 q-mt-xl text-center">{{ titlePagePokemonList }}</div>
+            <div class="container q=mt-xs">
+               <q-card>
+                  <q-card-section>
+                     <h6 class="q-my-xs">Vous chercher un pokemon en particulier?</h6>
+                  </q-card-section>
+                  <q-card-section>
+                     <div class="row justify-between">
+                        <q-input outlined v-model="searchValue" @keyup="submitSearch" class="col-8">
+                           <template v-if="searchValue" v-slot:append>
+                              <q-icon name="cancel" @click.stop.prevent="reset" class="cursor-pointer" />
+                           </template>
+                        </q-input>
+                        <q-btn class="col-3">Avancé</q-btn>
+                     </div>
+                  </q-card-section>
+               </q-card>
+            </div>
+            <div class="container q-mb-xs">
+               <q-table :title="tableTitle" :rows="pokemonsListFiltered" :columns="columns" row-key="name" @row-click="onRowClick" :pagination="initialPagination">
+                  <template v-slot:pagination="scope">
+                     <q-btn v-if="scope.pagesNumber > 2" icon="first_page" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.firstPage" />
+
+                     <q-btn icon="chevron_left" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.prevPage" />
+
+                     <q-btn icon="chevron_right" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.nextPage" />
+
+                     <q-btn v-if="scope.pagesNumber > 2" icon="last_page" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.lastPage" />
+                  </template>
+               </q-table>
+            </div>
+         </div>
+         <div v-else>
+            <q-card class="container">
+               <q-card-section class="text-center text-h4">
+                  <p>Un problème est survenu</p>
+                  <q-btn align="center" size="md" label="Pour plus de détails" @click="msgErrorToggleDetails = true" v-if="!msgErrorToggleDetails" />
                </q-card-section>
+            </q-card>
+            <q-card class="container" v-if="msgErrorToggleDetails">
                <q-card-section>
-                  <div class="row justify-between">
-                     <q-input outlined v-model="searchValue" @keyup="submitSearch" class="col-8">
-                        <template v-if="searchValue" v-slot:append>
-                           <q-icon name="cancel" @click.stop.prevent="reset" class="cursor-pointer" />
-                        </template>
-                     </q-input>
-                     <q-btn class="col-3">Avancé</q-btn>
+                  <p class="text-h6">Details:</p>
+                  <div v-for="(err, index) in msgError" :key="index">
+                     <p>{{ index }}: {{ err }}</p>
                   </div>
+               </q-card-section>
+               <q-card-section align="right">
+                  <q-btn flat size="lg" label="Fermer" @click="msgErrorToggleDetails = false" />
                </q-card-section>
             </q-card>
          </div>
-         <div class="container q-mb-xs">
-            <q-table :title="tableTitle" :rows="pokemonsListFiltered" :columns="columns" row-key="name" @row-click="onRowClick" :pagination="initialPagination">
-               <template v-slot:pagination="scope">
-                  <q-btn v-if="scope.pagesNumber > 2" icon="first_page" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.firstPage" />
-
-                  <q-btn icon="chevron_left" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.prevPage" />
-
-                  <q-btn icon="chevron_right" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.nextPage" />
-
-                  <q-btn v-if="scope.pagesNumber > 2" icon="last_page" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.lastPage" />
-               </template>
-            </q-table>
-         </div>
+         <dialog-pokemon-detail v-model="openDialogToggle" :pokemon="pokemon"></dialog-pokemon-detail>
       </div>
-      <div v-else>
-         <q-card class="container">
-            <q-card-section class="text-center text-h4">
-               <p>Un problème est survenu</p>
-               <q-btn align="center" size="md" label="Pour plus de détails" @click="msgErrorToggleDetails = true" v-if="!msgErrorToggleDetails" />
-            </q-card-section>
-         </q-card>
-         <q-card class="container" v-if="msgErrorToggleDetails">
-            <q-card-section>
-               <p class="text-h6">Details:</p>
-               <div v-for="(err, index) in msgError" :key="index">
-                  <p>{{ index }}: {{ err }}</p>
-               </div>
-            </q-card-section>
-            <q-card-section align="right">
-               <q-btn flat size="lg" label="Fermer" @click="msgErrorToggleDetails = false" />
-            </q-card-section>
-         </q-card>
-      </div>
-      <dialog-pokemon-detail v-model="openDialogToggle" :pokemon="pokemon"></dialog-pokemon-detail>
    </q-page>
 </template>
 
@@ -61,7 +63,6 @@
 - TODO  Créer une pagination. Boutons (Voir plus)
 
 TODO faire recherche avancée
-TODO mettre recherche en haut
 TODO ajouter un loading -> récupération des données
 
 */
@@ -109,7 +110,7 @@ let searchValue = ref('')
 function fetchPokemons() {
    // TODO faire pagination
 
-   api.get('pokemon')
+   api.get('pokemon/?limit=60&offset=20"')
       .then((res) => {
          return Promise.all(
             res.data.results.map((pokemon: IPokemon) => {
