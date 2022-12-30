@@ -50,8 +50,12 @@ export interface IPokemonData {
 }
 
 export interface IPokemon {
+   id: number
    name: string
    url: string
+   isLoaded: boolean
+   getSort: (PokemonList: IPokemon) => IPokemon[]
+   species: string
    height?: number
    weight?: number
    abilities?: IPokemonAbilities[]
@@ -84,7 +88,6 @@ const props = defineProps({
    }
 })
 props.pokemon
-
 </script>
 
 <style lang="scss" scoped>

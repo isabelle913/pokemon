@@ -15,23 +15,22 @@
                               <q-icon name="cancel" @click.stop.prevent="reset" class="cursor-pointer" />
                            </template>
                         </q-input>
-                        <q-btn class="col-3">Avancé</q-btn>
+                        <q-btn class="col-3">Recherche avancé</q-btn>
                      </div>
                   </q-card-section>
                </q-card>
             </div>
             <div class="container q-mb-xs">
-               <q-table :title="tableTitle" :rows="pokemonsListFiltered" :columns="columns" row-key="name" @row-click="onRowClick" :pagination="initialPagination">
-                  <template v-slot:pagination="scope">
-                     <q-btn v-if="scope.pagesNumber > 2" icon="first_page" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.firstPage" />
-
-                     <q-btn icon="chevron_left" color="grey-8" round dense flat :disable="scope.isFirstPage" @click="scope.prevPage" />
-
-                     <q-btn icon="chevron_right" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.nextPage" />
-
-                     <q-btn v-if="scope.pagesNumber > 2" icon="last_page" color="grey-8" round dense flat :disable="scope.isLastPage" @click="scope.lastPage" />
-                  </template>
-               </q-table>
+               <q-card>
+                  <q-card-section>
+                     <q-table v-model:pagination="pagination" :columns="columns" :loading="loading" :rows="pokemonsListFiltered" :title="tableTitle" @row-click="onRowClick" row-key="name" hide-pagination></q-table>
+                  </q-card-section>
+                  <q-card-section>
+                     <div class="flex flex-center">
+                        <q-pagination v-model="pagination.page" :max="pagesNumber" :max-pages="5" size="lg" boundary-links @click="getPokemonDetailsNewPage"></q-pagination>
+                     </div>
+                  </q-card-section>
+               </q-card>
             </div>
          </div>
          <div v-else>
@@ -60,27 +59,19 @@
 
 <script setup lang="ts">
 /*
-- TODO  Créer une pagination. Boutons (Voir plus)
 
 TODO faire recherche avancée
 TODO ajouter un loading -> récupération des données
-
+TODO mettre card message erreur dans un component
 */
 import { api } from 'boot/axios'
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { QTableColumn } from 'quasar'
-import { IPokemon, IPokemonData } from './dialog/dialog-pokemon-detail.vue'
+import { IPokemon } from './dialog/dialog-pokemon-detail.vue'
 import DialogPokemonDetail from '../../pages/pokemon/dialog/dialog-pokemon-detail.vue'
 
 const titlePagePokemonList = 'Grande famille des Pokemons'
 const tableTitle = 'Liste des Pokemons'
-const initialPagination = {
-   sortBy: 'desc',
-   descending: false,
-   page: 2,
-   rowsPerPage: 5
-}
-//TODO réviser les colonnes du tableau
 const columns: QTableColumn<IPokemon>[] = [
    {
       name: 'name',
@@ -88,47 +79,91 @@ const columns: QTableColumn<IPokemon>[] = [
       label: 'Nom',
       align: 'left',
       field: (row: IPokemon) => row.name,
-      format: (val: number | string) => `${val}`,
-      sortable: true
+      format: (val: number | string) => `${val}`
    },
-   { name: 'height', align: 'center', label: 'Grandeur', field: 'height', sortable: true },
-   { name: 'weight', align: 'center', label: 'Poids', field: 'weight', sortable: true },
-   { name: 'nbAbilities', align: 'center', label: 'Nb habilité(s)', field: 'nbAbilities', sortable: true },
-   { name: 'nbForms', align: 'center', label: 'Nb formes', field: 'nbForms', sortable: true }
+   { name: 'height', align: 'center', label: 'Grandeur', field: 'height' },
+   { name: 'weight', align: 'center', label: 'Poids', field: 'weight' },
+   { name: 'Image', align: 'center', label: 'avatar', field: 'sprites' }
 ]
-//const nbPokemeonToGet = 20
+const pagination = ref({
+   sortBy: 'desc',
+   descending: false,
+   page: 1,
+   rowsPerPage: 3
+})
+const pokemonsList = ref<IPokemon[]>([])
+const pokemonsListFiltered = ref<IPokemon[]>([])
+const msgErrorToggle = ref(false)
+const msgErrorToggleDetails = ref(false)
+const openDialogToggle = ref(false)
+const searchValue = ref('')
+const loading = ref(false)
 
-let pokemonsList = ref<IPokemon[]>([])
-let pokemonsListFiltered = ref<IPokemon[]>([])
-let pokemon = reactive<IPokemon>({ name: '', url: '' })
-let msgErrorToggle = ref(false)
-let msgErrorToggleDetails = ref(false)
+let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
 let msgError = reactive({})
-let openDialogToggle = ref(false)
-let searchValue = ref('')
 
 function fetchPokemons() {
-   // TODO faire pagination
-
-   api.get('pokemon/?limit=60&offset=20"')
+   api.get('pokemon/?limit=20&offset=20"') // TODO changer limite pour tous les charger au début
       .then((res) => {
-         return Promise.all(
-            res.data.results.map((pokemon: IPokemon) => {
-               return getPokemonDetails(pokemon.url)
-            })
-         )
-      })
-      .then((res) => {
-         pokemonsList.value = res.map((pokemon: IPokemonData) => {
-            return pokemon.data
+         pokemonsList.value = res.data.results.map((pokemon: IPokemon) => {
+            return {
+               name: pokemon.name,
+               url: pokemon.url,
+               isLoaded: false
+            }
          })
-         pokemonsListFiltered.value = pokemonsList.value
+
+         pokemonsListFiltered.value = getSort(pokemonsList.value) // TODO Corriger
+         console.log('fetch Pokemon', pokemonsListFiltered.value) // TODO enlever
+         getPokemonDetailsNewPage()
       })
       .catch((error) => {
          msgErrorToggle.value = true
          msgError = error.config
          console.log('error.config', error.config)
       })
+}
+
+const getSort = function (arr: IPokemon) {
+   arr.sort((a: IPokemon, b: IPokemon) => {
+      // TODO corriger TS
+      if (a.name < b.name) {
+         return -1
+      }
+      if (a.name > b.name) {
+         return 1
+      }
+   })
+
+   return arr
+}
+
+function getPokemonDetailsNewPage() {
+   const indexStartToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage
+   const indexStopToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage - 1 + pagination.value.rowsPerPage
+
+   pokemonsListFiltered.value.map(async (pokemon: IPokemon, index) => {
+      if (index >= indexStartToSearch && index <= indexStopToSearch && !pokemon.isLoaded) {
+         try {
+            const result = await getPokemonDetails(pokemon.url)
+            pokemon.id = result.data.id
+            pokemon.isLoaded = true
+            pokemon.species = result.data.species
+            pokemon.height = result.data.height
+            pokemon.weight = result.data.weight
+            pokemon.abilities = result.data.abilities
+            pokemon.forms = result.data.forms
+            pokemon.sprites = result.data.sprites
+            console.log(pokemon.sprites)
+            return pokemon
+         } catch (err) {
+            console.log(err)
+         }
+      } else {
+         return pokemon
+      }
+   })
+   console.log('Details', pokemonsListFiltered.value) //TODO enlever
 }
 
 const formatUrl = function (url: string) {
@@ -170,6 +205,10 @@ function load() {
 }
 
 load()
+
+const pagesNumber = computed(() => {
+   return Math.ceil(pokemonsList.value.length / pagination.value.rowsPerPage)
+})
 </script>
 
 <style scoped>
