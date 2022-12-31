@@ -2,14 +2,8 @@
    <div class="q-pa-md">
       <q-carousel v-model="slide" :autoplay="autoplay" transition-next="slide-left" transition-prev="slide-right" animated infinite>
          <!-- <q-carousel-slide v-for="image in imagesList" :key="image.id" :img-src="image.url" :name="image.id" class="image-size" width="80%" ></q-carousel-slide> -->
-         <q-carousel-slide
-            v-for="image in imagesList"
-            :key="image.id"
-            :name="image.id"
-            class="image-size"
-            width="100%"
-            >
-            <q-img :src="image.url"></q-img>
+         <q-carousel-slide v-for="image in imagesList" :key="image.id" :name="image.id" class="image-size" width="100%">
+            <q-img :src="image.url" class="carousel-image"></q-img>
          </q-carousel-slide>
       </q-carousel>
    </div>
@@ -35,4 +29,8 @@ const imagesList = [
 ]
 </script>
 
-<style></style>
+<style scoped>
+.carousel-image {
+   max-width: 350px;
+}
+</style>

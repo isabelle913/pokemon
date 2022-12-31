@@ -62,7 +62,7 @@ function toggleLeftDrawer() {
 <style>
 .container {
    width: 80%;
-   margin: 10% auto;
+   margin: 0 auto;
 }
 @media screen and (min-width: 1007px) {
    .footer-nav {

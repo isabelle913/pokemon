@@ -2,8 +2,8 @@
    <q-page>
       <div class="container">
          <div v-if="!msgErrorToggle">
-            <div class="text-h4 q-mt-xl text-center">{{ titlePagePokemonList }}</div>
-            <div class="container q=mt-xs">
+            <div class="text-h4 q-my-xl text-center">{{ titlePagePokemonList }}</div>
+            <div class="container">
                <q-card>
                   <q-card-section>
                      <h6 class="q-my-xs">Vous chercher un pokemon en particulier?</h6>
@@ -23,7 +23,7 @@
             <div class="container q-mb-xs">
                <q-card>
                   <q-card-section>
-                     <q-table v-model:pagination="pagination" :columns="columns" :loading="loading" :rows="pokemonsListFiltered" :title="tableTitle" @row-click="onRowClick" row-key="name" hide-pagination></q-table>
+                     <q-table :grid="$q.screen.xs" v-model:pagination="pagination" :columns="columns" :loading="loading" :rows="pokemonsListFiltered" :title="tableTitle" @row-click="onRowClick" row-key="name" hide-pagination></q-table>
                   </q-card-section>
                   <q-card-section>
                      <div class="flex flex-center">
@@ -33,7 +33,7 @@
                </q-card>
             </div>
          </div>
-         <div v-else>
+         <div v-else class="q-my-xl">
             <q-card class="container">
                <q-card-section class="text-center text-h4">
                   <p>Un problème est survenu</p>
@@ -63,6 +63,8 @@
 TODO faire recherche avancée
 TODO ajouter un loading -> récupération des données
 TODO mettre card message erreur dans un component
+
+
 */
 import { api } from 'boot/axios'
 import { ref, reactive, computed } from 'vue'
@@ -83,13 +85,13 @@ const columns: QTableColumn<IPokemon>[] = [
    },
    { name: 'height', align: 'center', label: 'Grandeur', field: 'height' },
    { name: 'weight', align: 'center', label: 'Poids', field: 'weight' },
-   { name: 'Image', align: 'center', label: 'avatar', field: 'sprites' }
+   { name: 'baseExperience', align: 'center', label: 'Force', field: 'baseExperience' }
 ]
 const pagination = ref({
    sortBy: 'desc',
    descending: false,
    page: 1,
-   rowsPerPage: 3
+   rowsPerPage: 10
 })
 const pokemonsList = ref<IPokemon[]>([])
 const pokemonsListFiltered = ref<IPokemon[]>([])
@@ -103,11 +105,11 @@ let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
 let msgError = reactive({})
 
 function fetchPokemons() {
-   api.get('pokemon/?limit=20&offset=20"') // TODO changer limite pour tous les charger au début
+   api.get('pokemon/?limit=30&offset=20"') // TODO changer limite pour tous les charger au début
       .then((res) => {
          pokemonsList.value = res.data.results.map((pokemon: IPokemon) => {
             return {
-               name: pokemon.name,
+               name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
                url: pokemon.url,
                isLoaded: false
             }
@@ -134,7 +136,6 @@ const getSort = function (arr: IPokemon) {
          return 1
       }
    })
-
    return arr
 }
 
@@ -145,16 +146,17 @@ function getPokemonDetailsNewPage() {
    pokemonsListFiltered.value.map(async (pokemon: IPokemon, index) => {
       if (index >= indexStartToSearch && index <= indexStopToSearch && !pokemon.isLoaded) {
          try {
-            const result = await getPokemonDetails(pokemon.url)
-            pokemon.id = result.data.id
+            const results = await getPokemonDetails(pokemon.url)
+            pokemon.id = results.data.id
             pokemon.isLoaded = true
-            pokemon.species = result.data.species
-            pokemon.height = result.data.height
-            pokemon.weight = result.data.weight
-            pokemon.abilities = result.data.abilities
-            pokemon.forms = result.data.forms
-            pokemon.sprites = result.data.sprites
-            console.log(pokemon.sprites)
+            pokemon.species = results.data.species
+            pokemon.height = results.data.height
+            pokemon.weight = results.data.weight
+            pokemon.abilities = results.data.abilities
+            pokemon.forms = results.data.forms
+            pokemon.image = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${results.data.id}.png`
+            pokemon.baseExperience = results.data.base_experience
+
             return pokemon
          } catch (err) {
             console.log(err)
@@ -211,11 +213,4 @@ const pagesNumber = computed(() => {
 })
 </script>
 
-<style scoped>
-.card {
-   width: 80%;
-}
-.margin-null {
-   margin: 0;
-}
-</style>
+<style scoped></style>
