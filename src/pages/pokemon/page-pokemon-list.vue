@@ -3,22 +3,24 @@
       <div class="container">
          <div v-if="!msgErrorToggle">
             <div class="text-h4 q-my-xl text-center">{{ titlePagePokemonList }}</div>
+
             <div class="container">
                <q-card>
                   <q-card-section>
                      <h6 class="q-my-xs">Vous chercher un pokemon en particulier?</h6>
                   </q-card-section>
                   <q-card-section>
-                     <div class="row justify-between">
-                        <q-input outlined v-model="searchValue" @keyup="submitSearch" class="col-8">
+                     <div>
+                        <q-input outlined v-model="searchValue" @keyup="submitSearch">
                            <template v-if="searchValue" v-slot:append>
                               <q-icon name="cancel" @click.stop.prevent="reset" class="cursor-pointer" />
                            </template>
                         </q-input>
-                        <q-btn class="col-3">Recherche avancé</q-btn>
                      </div>
+                     <q-btn v-if="!advanceSearchToggle" @click="advanceSearchToggle = true" class="btn-searchAdvanced">Recherche avancé</q-btn>
                   </q-card-section>
                </q-card>
+               <EzAdvancedSearch v-if="advanceSearchToggle" @advancedSearch="advancedSearch"></EzAdvancedSearch>
             </div>
             <div class="container q-mb-xs">
                <q-card>
@@ -60,7 +62,7 @@
 <script setup lang="ts">
 /*
 
-TODO faire recherche avancée
+
 TODO ajouter un loading -> récupération des données
 TODO mettre card message erreur dans un component
 
@@ -70,7 +72,9 @@ import { api } from 'boot/axios'
 import { ref, reactive, computed } from 'vue'
 import { QTableColumn } from 'quasar'
 import { IPokemon } from './dialog/dialog-pokemon-detail.vue'
+import { requestPokemonApi } from '../../services/services'
 import DialogPokemonDetail from '../../pages/pokemon/dialog/dialog-pokemon-detail.vue'
+import EzAdvancedSearch from 'src/components/advanced-search/ez-advanced-search.vue'
 
 const titlePagePokemonList = 'Grande famille des Pokemons'
 const tableTitle = 'Liste des Pokemons'
@@ -95,6 +99,7 @@ const pagination = ref({
 })
 const pokemonsList = ref<IPokemon[]>([])
 const pokemonsListFiltered = ref<IPokemon[]>([])
+const advanceSearchToggle = ref(false)
 const msgErrorToggle = ref(false)
 const msgErrorToggleDetails = ref(false)
 const openDialogToggle = ref(false)
@@ -104,8 +109,10 @@ const loading = ref(false)
 let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
 let msgError = reactive({})
 
+// TODO changer limite pour tous les charger au début
+
 function fetchPokemons() {
-   api.get('pokemon/?limit=30&offset=20"') // TODO changer limite pour tous les charger au début
+   api.get('pokemon/?limit=30&offset=20"')
       .then((res) => {
          pokemonsList.value = res.data.results.map((pokemon: IPokemon) => {
             return {
@@ -115,8 +122,7 @@ function fetchPokemons() {
             }
          })
 
-         pokemonsListFiltered.value = getSort(pokemonsList.value) // TODO Corriger
-         console.log('fetch Pokemon', pokemonsListFiltered.value) // TODO enlever
+         pokemonsListFiltered.value = getSort(pokemonsList.value)
          getPokemonDetailsNewPage()
       })
       .catch((error) => {
@@ -128,7 +134,6 @@ function fetchPokemons() {
 
 const getSort = function (arr: IPokemon) {
    arr.sort((a: IPokemon, b: IPokemon) => {
-      // TODO corriger TS
       if (a.name < b.name) {
          return -1
       }
@@ -146,7 +151,8 @@ function getPokemonDetailsNewPage() {
    pokemonsListFiltered.value.map(async (pokemon: IPokemon, index) => {
       if (index >= indexStartToSearch && index <= indexStopToSearch && !pokemon.isLoaded) {
          try {
-            const results = await getPokemonDetails(pokemon.url)
+            const urlRequest = `pokemon/${formatUrl(pokemon.url)}`
+            const results = await requestPokemonApi(urlRequest)
             pokemon.id = results.data.id
             pokemon.isLoaded = true
             pokemon.species = results.data.species
@@ -172,17 +178,6 @@ const formatUrl = function (url: string) {
    return url.split('/')[6]
 }
 
-const getPokemonDetails = function (url: string) {
-   return api
-      .get(`pokemon/${formatUrl(url)}`)
-      .then((resp) => {
-         return Promise.resolve(resp)
-      })
-      .catch((err) => {
-         return Promise.reject(err)
-      })
-}
-
 const onRowClick = function (evt: object, row: IPokemon) {
    pokemon = row
    openDialogToggle.value = true
@@ -202,6 +197,11 @@ const reset = function () {
    load()
 }
 
+const advancedSearch = function(pokemonsListToSearch){
+console.log('results',pokemonsListToSearch);
+}
+
+
 function load() {
    fetchPokemons()
 }
@@ -213,4 +213,9 @@ const pagesNumber = computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.btn-searchAdvanced {
+   display: block;
+   margin: 10px auto;
+}
+</style>

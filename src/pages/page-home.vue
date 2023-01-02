@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import EzCarouselImages from '../components/carousel-images.vue/ez-carousel-images.vue'
+import EzCarouselImages from '../components/carousel-images/ez-carousel-images.vue'
 
 const theName = ref('Pokemon friends')
 </script>

@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
             path: 'pokemon',
             component: () => import('src/pages/pokemon/page-pokemon-list.vue')
          },
-         // To Do Ajouter une page about Done :) 
+
          {
             path: 'about',
             component: () => import('src/pages/page-about.vue')

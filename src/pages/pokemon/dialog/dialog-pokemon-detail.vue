@@ -67,6 +67,8 @@ export interface IPokemon {
    url: string
    isLoaded: boolean
    getSort: (PokemonList: IPokemon) => IPokemon[]
+   //sort: (arr: IPokemon) => IPokemon[]
+   //sort: (a: IPokemon, b: IPokemon) => IPokemon[]
    species: IPokemonSpecies
    height?: number
    weight?: number
@@ -76,7 +78,6 @@ export interface IPokemon {
    baseExperience?: number
 }
 
-//console.log(pokemon.sprites?.front_default)
 export interface IPokemonSpecies {
    name: string
 }
