@@ -3,11 +3,10 @@
       <div class="container">
          <div v-if="!msgErrorToggle">
             <div class="text-h4 q-my-xl text-center">{{ titlePagePokemonList }}</div>
-
-            <div class="container">
-               <q-card>
+            <div>
+               <q-card v-if="!advanceSearchToggle">
                   <q-card-section>
-                     <h6 class="q-my-xs">Vous chercher un pokemon en particulier?</h6>
+                     <h6 class="q-my-xs text-search">Vous chercher un Pokémon en particulier?</h6>
                   </q-card-section>
                   <q-card-section>
                      <div>
@@ -17,21 +16,26 @@
                            </template>
                         </q-input>
                      </div>
-                     <q-btn v-if="!advanceSearchToggle" @click="advanceSearchToggle = true" class="btn-searchAdvanced">Recherche avancé</q-btn>
+                     <q-btn @click="changeadvanceSearchToggle" class="btn-searchAdvanced">Recherche avancé</q-btn>
                   </q-card-section>
                </q-card>
-               <EzAdvancedSearch v-if="advanceSearchToggle" @advancedSearch="advancedSearch"></EzAdvancedSearch>
+               <EzAdvancedSearch v-if="advanceSearchToggle" @advancedSearch="advancedSearch" @changeadvanceSearchToggle="changeadvanceSearchToggle" class="q-mt-md"></EzAdvancedSearch>
             </div>
-            <div class="container q-mb-xs">
+            <div class="q-mt-md">
                <q-card>
-                  <q-card-section>
-                     <q-table :grid="$q.screen.xs" v-model:pagination="pagination" :columns="columns" :loading="loading" :rows="pokemonsListFiltered" :title="tableTitle" @row-click="onRowClick" row-key="name" hide-pagination></q-table>
-                  </q-card-section>
-                  <q-card-section>
-                     <div class="flex flex-center">
-                        <q-pagination v-model="pagination.page" :max="pagesNumber" :max-pages="5" size="lg" boundary-links @click="getPokemonDetailsNewPage"></q-pagination>
-                     </div>
-                  </q-card-section>
+                  <div v-if="qTableToggle">
+                     <q-card-section>
+                        <q-table :grid="$q.screen.xs" v-model:pagination="pagination" :columns="columns" :loading="loading" :rows="pokemonsListFiltered" :title="tableTitle" @row-click="onRowClick" row-key="name" hide-pagination></q-table>
+                     </q-card-section>
+                     <q-card-section>
+                        <div class="flex flex-center">
+                           <q-pagination v-model="pagination.page" :max="pagesNumber" :max-pages="5" size="lg" boundary-links @click="getPokemonDetailsNewPage"></q-pagination>
+                        </div>
+                     </q-card-section>
+                  </div>
+                  <div v-else>
+                     <h6 class="msg-not-found">Nous n'avons pas trouvé de Pokémons corespondent à votre demande</h6>
+                  </div>
                </q-card>
             </div>
          </div>
@@ -60,14 +64,6 @@
 </template>
 
 <script setup lang="ts">
-/*
-
-
-TODO ajouter un loading -> récupération des données
-TODO mettre card message erreur dans un component
-
-
-*/
 import { api } from 'boot/axios'
 import { ref, reactive, computed } from 'vue'
 import { QTableColumn } from 'quasar'
@@ -106,13 +102,14 @@ const openDialogToggle = ref(false)
 const searchValue = ref('')
 const loading = ref(false)
 
-let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
+// let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
+// let pokemon = reactive({ name: '', url: '', isLoaded: false })
+let pokemon: IPokemon = reactive({})
 let msgError = reactive({})
 
-// TODO changer limite pour tous les charger au début
-
 function fetchPokemons() {
-   api.get('pokemon/?limit=30&offset=20"')
+   loading.value = true
+   api.get('pokemon/?limit=1500&offset=0"')
       .then((res) => {
          pokemonsList.value = res.data.results.map((pokemon: IPokemon) => {
             return {
@@ -123,6 +120,7 @@ function fetchPokemons() {
          })
 
          pokemonsListFiltered.value = getSort(pokemonsList.value)
+
          getPokemonDetailsNewPage()
       })
       .catch((error) => {
@@ -130,6 +128,7 @@ function fetchPokemons() {
          msgError = error.config
          console.log('error.config', error.config)
       })
+   loading.value = false
 }
 
 const getSort = function (arr: IPokemon) {
@@ -145,6 +144,7 @@ const getSort = function (arr: IPokemon) {
 }
 
 function getPokemonDetailsNewPage() {
+   loading.value = true
    const indexStartToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage
    const indexStopToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage - 1 + pagination.value.rowsPerPage
 
@@ -171,7 +171,8 @@ function getPokemonDetailsNewPage() {
          return pokemon
       }
    })
-   console.log('Details', pokemonsListFiltered.value) //TODO enlever
+   loading.value = false
+   //console.log('Details', pokemonsListFiltered.value)
 }
 
 const formatUrl = function (url: string) {
@@ -189,18 +190,39 @@ const submitSearch = function () {
    pokemonsListFiltered.value = pokemonsList.value.filter((pokemon) => {
       return pokemon.name.toLowerCase().includes(searchString)
    })
-   // TODO ajouter un message que la recherche est infructueuse
+
+   getPokemonDetailsNewPage()
 }
 
 const reset = function () {
    searchValue.value = ''
-   load()
+   pokemonsListFiltered.value = getSort(pokemonsList.value)
 }
 
-const advancedSearch = function(pokemonsListToSearch){
-console.log('results',pokemonsListToSearch);
+const advancedSearch = function (pokemonsListToSearch: Set<string>) {
+   searchValue.value = ''
+   pokemonsListFiltered.value = getSort(pokemonsList.value)
+
+   if (pokemonsListToSearch === undefined) {
+      return
+   }
+   if (!pokemonsListToSearch.size > 0) {
+      return
+   }
+
+   pokemonsListFiltered.value = pokemonsListFiltered.value.filter((pokemon) => {
+      if (pokemonsListToSearch.has(pokemon.name.toLocaleLowerCase())) {
+         return pokemon
+      }
+   })
+
+   getPokemonDetailsNewPage()
 }
 
+const changeadvanceSearchToggle = function () {
+   advanceSearchToggle.value = !advanceSearchToggle.value
+   searchValue.value = ''
+}
 
 function load() {
    fetchPokemons()
@@ -209,13 +231,34 @@ function load() {
 load()
 
 const pagesNumber = computed(() => {
-   return Math.ceil(pokemonsList.value.length / pagination.value.rowsPerPage)
+   return Math.ceil(pokemonsListFiltered.value.length / pagination.value.rowsPerPage)
+})
+
+const qTableToggle = computed(() => {
+   console.log()
+   if (!pokemonsListFiltered.value.length) {
+      return false
+   } else {
+      return true
+   }
 })
 </script>
 
 <style scoped>
+.text-search {
+   font-size: 18px;
+}
 .btn-searchAdvanced {
    display: block;
    margin: 10px auto;
+}
+.msg-not-found {
+   padding: 16px;
+}
+
+@media screen and (min-width: 500px) {
+   .text-search {
+      font-size: 20px;
+   }
 }
 </style>

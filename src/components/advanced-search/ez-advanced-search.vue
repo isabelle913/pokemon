@@ -1,13 +1,14 @@
 <template>
-   <div class="container">
+   <div>
       <q-card>
          <q-card-section>
             <div>
+               <h6 class="q-my-xs text-search">Recherche avancée:</h6>
                <div class="q-my-sm">
-                  <div>
-                     <q-select outlined v-model="genderSelected" :options="genderOptions" label="Outlined" class="q-my-sm" />
+                  <div class="group-input-choice">
+                     <q-select outlined v-model="genderSelected" :options="genderOptions" label="Outlined" class="q-my-sm input-choice" />
 
-                     <q-select outlined v-model="habitatSelected" :options="habitatsOptions" label="Outlined" class="q-my-sm" />
+                     <q-select outlined v-model="habitatSelected" :options="habitatsOptions" label="Outlined" class="q-my-sm input-choice input-choice-right" />
                   </div>
                   <div class="q-gutter-sm">
                      <q-radio v-model="searchOptionSelected" val="and" label="Sélectionner tous ces attributs" />
@@ -16,6 +17,7 @@
                   <div class="row justify-center">
                      <q-btn @click="submitAdvancedSearch" class="btn-search">Rechercher</q-btn>
                      <q-btn @click="reset" class="btn-search">Reinitialiser</q-btn>
+                     <q-btn @click="closeAdvancedSearch" class="btn-search">Fermer recherche avancé</q-btn>
                   </div>
                </div>
             </div>
@@ -28,7 +30,7 @@
 import { requestPokemonApi } from 'src/services/services'
 import { ref } from 'vue'
 
-const emit = defineEmits(['advancedSearch'])
+const emit = defineEmits(['advancedSearch', 'changeadvanceSearchToggle'])
 
 interface Options {
    label: string
@@ -36,6 +38,7 @@ interface Options {
    url: string
    name: string
 }
+
 interface IPokemonGender {
    pokemon_species: {
       name: string
@@ -52,8 +55,6 @@ const habitatSelected = ref<Options[]>()
 const searchOptionSelected = ref('and')
 
 let genderOptions = ref<Options>()
-// console.log('ici', genderOptions)
-// console.log(typeof genderOptions.value)
 let habitatsOptions = ref<Options>()
 let pokemonsListToSearch: Set<string>
 
@@ -102,10 +103,6 @@ const submitAdvancedSearch = async function () {
    let habitatPokemonsListName: string[] = []
 
    if (genderSelected.value && genderSelected.value.value !== 'tous') {
-      console.log('genderSelected.value', genderSelected.value)
-      console.log(typeof genderSelected.value)
-      console.log('genderSelected.value,value', genderSelected.value.value)
-      console.log(typeof genderSelected.value.value)
       const response = await requestPokemonApi(formatUrl(genderSelected.value.url))
       genderPokemonsListName = response.data.pokemon_species_details.map((pokemon: IPokemonGender) => {
          return pokemon.pokemon_species.name
@@ -126,12 +123,8 @@ const submitAdvancedSearch = async function () {
          pokemonsListToSearch = new Set(genderPokemonsListName)
       } else if (habitatPokemonsListName) {
          pokemonsListToSearch = new Set(habitatPokemonsListName)
-      } else {
-         console.log('rien OR')
       }
    } else {
-      console.log('Je suis ici')
-
       pokemonsListToSearch = new Set()
       if (genderPokemonsListName.length > 0) {
          if (habitatPokemonsListName.length > 0) {
@@ -147,9 +140,7 @@ const submitAdvancedSearch = async function () {
          habitatPokemonsListName.forEach((pokemon) => pokemonsListToSearch.add(pokemon))
       }
    }
-   //console.log('A chercher', pokemonsListToSearch)
 
-   //  return pokemonsListToSearch
    emit('advancedSearch', pokemonsListToSearch)
 }
 
@@ -161,13 +152,35 @@ getOptions()
 const reset = function () {
    genderSelected.value = undefined
    habitatSelected.value = undefined
-
    searchOptionSelected.value = 'and'
+
+   if (pokemonsListToSearch !== undefined) {
+      pokemonsListToSearch.clear()
+   }
+   emit('advancedSearch', pokemonsListToSearch)
+}
+
+const closeAdvancedSearch = function () {
+   reset()
+   emit('changeadvanceSearchToggle')
 }
 </script>
 
 <style scoped>
 .btn-search {
    margin: 10px;
+}
+
+@media screen and (min-width: 768px) {
+   .group-input-choice {
+      display: flex;
+      flex-direction: row;
+   }
+   .input-choice {
+      flex-grow: 1;
+   }
+   .input-choice-right {
+      margin-left: 10px;
+   }
 }
 </style>

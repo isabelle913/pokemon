@@ -57,12 +57,8 @@
 <script setup lang="ts">
 import { PropType } from 'vue'
 
-export interface IPokemonData {
-   data: IPokemon
-}
-
 export interface IPokemon {
-   id: number
+   id?: number
    name: string
    url: string
    isLoaded: boolean
@@ -91,6 +87,14 @@ export interface IPokemonAbilities {
 export interface IPokemonForms {
    name: string
 }
+export interface IPokemonData {
+   data: IPokemon
+}
+// export interface IPokemonIndividu {
+//    data: string
+//    url: string
+//    isLoaded: boolean
+// }
 
 const props = defineProps({
    pokemon: {
