@@ -102,9 +102,7 @@ const openDialogToggle = ref(false)
 const searchValue = ref('')
 const loading = ref(false)
 
-// let pokemon = reactive<IPokemon>({ name: '', url: '', isLoaded: false })
-// let pokemon = reactive({ name: '', url: '', isLoaded: false })
-let pokemon: IPokemon = reactive({})
+let pokemon: IPokemon = reactive({ name: '', url: '', isLoaded: false })
 let msgError = reactive({})
 
 function fetchPokemons() {
@@ -206,7 +204,7 @@ const advancedSearch = function (pokemonsListToSearch: Set<string>) {
    if (pokemonsListToSearch === undefined) {
       return
    }
-   if (!pokemonsListToSearch.size > 0) {
+   if (!pokemonsListToSearch.size) {
       return
    }
 
@@ -235,7 +233,6 @@ const pagesNumber = computed(() => {
 })
 
 const qTableToggle = computed(() => {
-   console.log()
    if (!pokemonsListFiltered.value.length) {
       return false
    } else {

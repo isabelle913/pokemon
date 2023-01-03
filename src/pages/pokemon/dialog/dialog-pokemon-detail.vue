@@ -62,10 +62,8 @@ export interface IPokemon {
    name: string
    url: string
    isLoaded: boolean
-   getSort: (PokemonList: IPokemon) => IPokemon[]
-   //sort: (arr: IPokemon) => IPokemon[]
-   //sort: (a: IPokemon, b: IPokemon) => IPokemon[]
-   species: IPokemonSpecies
+   getSort?: (PokemonList: IPokemon) => IPokemon[]
+   species?: IPokemonSpecies
    height?: number
    weight?: number
    abilities?: IPokemonAbilities[]
@@ -90,11 +88,6 @@ export interface IPokemonForms {
 export interface IPokemonData {
    data: IPokemon
 }
-// export interface IPokemonIndividu {
-//    data: string
-//    url: string
-//    isLoaded: boolean
-// }
 
 const props = defineProps({
    pokemon: {
