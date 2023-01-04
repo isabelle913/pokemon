@@ -25,7 +25,7 @@
                </div>
                <q-separator vertical inset></q-separator>
                <div>
-                  <p class="text-center">{{ pokemon.species.name.charAt(0).toUpperCase() + pokemon.name.slice(1) }}</p>
+                  <p class="text-center">{{ pokemon.species?.name.charAt(0).toUpperCase() + pokemon.name.slice(1) }}</p>
                   <p class="text-center text-subtitle1">Espèce</p>
                </div>
             </q-card-section>
@@ -57,6 +57,12 @@
 <script setup lang="ts">
 import { PropType } from 'vue'
 
+// export interface IPokemonUnique {
+//    name: string
+//    url: string
+//    isLoaded: boolean
+// }
+
 export interface IPokemon {
    id?: number
    name: string
@@ -74,6 +80,7 @@ export interface IPokemon {
 
 export interface IPokemonSpecies {
    name: string
+   url: string
 }
 export interface IPokemonAbilities {
    ability: {
@@ -96,6 +103,9 @@ const props = defineProps({
    }
 })
 props.pokemon
+// console.log(props.pokemon)
+// console.log(props.pokemon.height)
+// console.log(props.pokemon.species)
 
 const calculateProgressBasValue = function (value: number | undefined) {
    if (typeof value === 'number') {

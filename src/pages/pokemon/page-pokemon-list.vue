@@ -16,10 +16,10 @@
                            </template>
                         </q-input>
                      </div>
-                     <q-btn @click="changeadvanceSearchToggle" class="btn-searchAdvanced">Recherche avancé</q-btn>
+                     <q-btn @click="changeAdvanceSearchToggle" class="btn-searchAdvanced">Recherche avancé</q-btn>
                   </q-card-section>
                </q-card>
-               <EzAdvancedSearch v-if="advanceSearchToggle" @advancedSearch="advancedSearch" @changeadvanceSearchToggle="changeadvanceSearchToggle" class="q-mt-md"></EzAdvancedSearch>
+               <EzAdvancedSearch v-if="advanceSearchToggle" @advancedSearch="advancedSearch" @changeAdvanceSearchToggle="changeAdvanceSearchToggle" class="q-mt-md"></EzAdvancedSearch>
             </div>
             <div class="q-mt-md">
                <q-card>
@@ -118,6 +118,7 @@ function fetchPokemons() {
          })
 
          pokemonsListFiltered.value = getSort(pokemonsList.value)
+         //pokemonsListFiltered.value = pokemonsList.value.sort()
 
          getPokemonDetailsNewPage()
       })
@@ -129,7 +130,7 @@ function fetchPokemons() {
    loading.value = false
 }
 
-const getSort = function (arr: IPokemon) {
+const getSort = function (arr: IPokemon[]) {
    arr.sort((a: IPokemon, b: IPokemon) => {
       if (a.name < b.name) {
          return -1
@@ -137,6 +138,7 @@ const getSort = function (arr: IPokemon) {
       if (a.name > b.name) {
          return 1
       }
+      return 0
    })
    return arr
 }
@@ -217,7 +219,7 @@ const advancedSearch = function (pokemonsListToSearch: Set<string>) {
    getPokemonDetailsNewPage()
 }
 
-const changeadvanceSearchToggle = function () {
+const changeAdvanceSearchToggle = function () {
    advanceSearchToggle.value = !advanceSearchToggle.value
    searchValue.value = ''
 }

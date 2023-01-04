@@ -30,7 +30,7 @@
 import { requestPokemonApi } from 'src/services/services'
 import { ref } from 'vue'
 
-const emit = defineEmits(['advancedSearch', 'changeadvanceSearchToggle'])
+const emit = defineEmits(['advancedSearch', 'changeAdvanceSearchToggle'])
 
 interface Options {
    label: string
@@ -50,29 +50,34 @@ interface IPokemonHabitat {
    url: string
 }
 
-const genderSelected = ref<Options[]>()
-const habitatSelected = ref<Options[]>()
+const genderSelected = ref<Options>()
+const habitatSelected = ref<Options>()
 const searchOptionSelected = ref('and')
 
-let genderOptions = ref<Options>()
-let habitatsOptions = ref<Options>()
+let genderOptions = ref<Options[]>([])
+let habitatsOptions = ref<Options[]>([])
 let pokemonsListToSearch: Set<string>
 
 const getOptions = async function () {
-   const responseGender = await requestPokemonApi('gender/')
-   genderOptions.value = formatResponse(responseGender.data.results.map((gender: Options) => gender))
+   const responseGender = await requestPokemonApi('gender/') // Hard codé!
+   //  console.log(responseGender)
+   //  console.log(responseGender.data.results)
+   //  genderOptions.value = formatResponse(responseGender.data.results.map((gender: Options) => gender))
+   genderOptions.value = formatResponse(responseGender.data.results)
+   //  console.log(genderOptions.value)
 
    const responseHabitats = await requestPokemonApi('pokemon-habitat/')
    habitatsOptions.value = formatResponse(responseHabitats.data.results.map((habitat: Options) => habitat))
 }
 
-const formatResponse = function (arrOptions: Options) {
+const formatResponse = function (arrOptions: Options[]) {
    const tempo = getSort(
-      arrOptions.map((item: Options) => {
+      arrOptions.map((item) => {
          return {
             label: item.name.charAt(0).toUpperCase() + item.name.slice(1),
             value: item.name,
-            url: item.url
+            url: item.url,
+            name: item.name
          }
       })
    )
@@ -80,12 +85,13 @@ const formatResponse = function (arrOptions: Options) {
    tempo.unshift({
       label: 'Tous',
       value: 'tous',
-      url: ''
+      url: '',
+      name: 'tous'
    })
    return tempo
 }
 
-const getSort = function (arr: Options) {
+const getSort = function (arr: Options[]) {
    arr.sort((a: Options, b: Options) => {
       if (a.label < b.label) {
          return -1
@@ -93,6 +99,7 @@ const getSort = function (arr: Options) {
       if (a.label > b.label) {
          return 1
       }
+      return 0
    })
 
    return arr
@@ -162,7 +169,7 @@ const reset = function () {
 
 const closeAdvancedSearch = function () {
    reset()
-   emit('changeadvanceSearchToggle')
+   emit('changeAdvanceSearchToggle')
 }
 </script>
 
