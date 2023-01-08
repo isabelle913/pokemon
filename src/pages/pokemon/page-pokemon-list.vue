@@ -67,8 +67,7 @@
 import { api } from 'boot/axios'
 import { ref, reactive, computed } from 'vue'
 import { QTableColumn } from 'quasar'
-import { IPokemon } from './dialog/dialog-pokemon-detail.vue'
-import { requestPokemonApi } from '../../services/services'
+import { IPokemon, IPokemonNew } from './dialog/dialog-pokemon-detail.vue'
 import DialogPokemonDetail from '../../pages/pokemon/dialog/dialog-pokemon-detail.vue'
 import EzAdvancedSearch from 'src/components/advanced-search/ez-advanced-search.vue'
 
@@ -91,7 +90,8 @@ const pagination = ref({
    sortBy: 'desc',
    descending: false,
    page: 1,
-   rowsPerPage: 10
+   rowsPerPage: 3
+   // TODO modifier rowsPerPage
 })
 const pokemonsList = ref<IPokemon[]>([])
 const pokemonsListFiltered = ref<IPokemon[]>([])
@@ -107,7 +107,8 @@ let msgError = reactive({})
 
 function fetchPokemons() {
    loading.value = true
-   api.get('pokemon/?limit=1500&offset=0"')
+   // TODO modifier limite
+   api.get('pokemon/?limit=20&offset=0"')
       .then((res) => {
          pokemonsList.value = res.data.results.map((pokemon: IPokemon) => {
             return {
@@ -148,31 +149,40 @@ function getPokemonDetailsNewPage() {
    const indexStartToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage
    const indexStopToSearch = (pagination.value.page - 1) * pagination.value.rowsPerPage - 1 + pagination.value.rowsPerPage
 
-   pokemonsListFiltered.value.map(async (pokemon: IPokemon, index) => {
+   // Pour récupérer seulement les détails des Pokémons n'ayant pas encore récupérer ses détails
+   let pokemonToLoad: Promise<IPokemonNew>[] = []
+   pokemonsListFiltered.value.map((pokemon: IPokemon, index) => {
       if (index >= indexStartToSearch && index <= indexStopToSearch && !pokemon.isLoaded) {
-         try {
-            const urlRequest = `pokemon/${formatUrl(pokemon.url)}`
-            const results = await requestPokemonApi(urlRequest)
-            pokemon.id = results.data.id
-            pokemon.isLoaded = true
-            pokemon.species = results.data.species
-            pokemon.height = results.data.height
-            pokemon.weight = results.data.weight
-            pokemon.abilities = results.data.abilities
-            pokemon.forms = results.data.forms
-            pokemon.image = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${results.data.id}.png`
-            pokemon.baseExperience = results.data.base_experience
-
-            return pokemon
-         } catch (err) {
-            console.log(err)
-         }
-      } else {
-         return pokemon
+         pokemonToLoad.push(api.get(`pokemon/${formatUrl(pokemon.url)}`))
       }
    })
+
+   Promise.all(pokemonToLoad)
+      .then((res) => {
+         res.map((newPokemon) => {
+            console.log('newPokemon', newPokemon)
+            pokemonsListFiltered.value.map((pokemon) => {
+               if (newPokemon.data.name === pokemon.name.toLocaleLowerCase()) {
+                  console.log('Pokemon', pokemon)
+                  pokemon.id = newPokemon.data.id
+                  pokemon.isLoaded = true
+                  pokemon.species = newPokemon.data.species
+                  pokemon.height = newPokemon.data.height
+                  pokemon.weight = newPokemon.data.weight
+                  pokemon.abilities = newPokemon.data.abilities
+                  pokemon.forms = newPokemon.data.forms
+                  pokemon.image = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${newPokemon.data.id}.png`
+                  pokemon.baseExperience = newPokemon.data.base_experience
+               }
+            })
+         })
+      })
+      .catch((err) => {
+         console.log(err)
+      })
+
    loading.value = false
-   //console.log('Details', pokemonsListFiltered.value)
+   console.log('Details', pokemonsListFiltered.value)
 }
 
 const formatUrl = function (url: string) {

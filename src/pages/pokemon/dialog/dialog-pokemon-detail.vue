@@ -62,6 +62,9 @@ import { PropType } from 'vue'
 //    url: string
 //    isLoaded: boolean
 // }
+export interface IPokemonNew {
+   data: IPokemon
+}
 
 export interface IPokemon {
    id?: number
@@ -76,6 +79,7 @@ export interface IPokemon {
    image?: string
    forms?: IPokemonForms[]
    baseExperience?: number
+   base_experience?: number
 }
 
 export interface IPokemonSpecies {

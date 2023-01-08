@@ -6,9 +6,9 @@
                <h6 class="q-my-xs text-search">Recherche avancée:</h6>
                <div class="q-my-sm">
                   <div class="group-input-choice">
-                     <q-select outlined v-model="genderSelected" :options="genderOptions" label="Outlined" class="q-my-sm input-choice" />
+                     <q-select outlined v-model="genderSelected" :options="genderOptions" label="Sélectionner le genre" class="q-my-sm input-choice" />
 
-                     <q-select outlined v-model="habitatSelected" :options="habitatsOptions" label="Outlined" class="q-my-sm input-choice input-choice-right" />
+                     <q-select outlined v-model="habitatSelected" :options="habitatsOptions" label="Sélectionner l'habitat" class="q-my-sm input-choice input-choice-right" />
                   </div>
                   <div class="q-gutter-sm">
                      <q-radio v-model="searchOptionSelected" val="and" label="Sélectionner tous ces attributs" />
@@ -27,10 +27,17 @@
 </template>
 
 <script setup lang="ts">
-import { requestPokemonApi } from 'src/services/services'
+import { api } from 'boot/axios'
 import { ref } from 'vue'
 
 const emit = defineEmits(['advancedSearch', 'changeAdvanceSearchToggle'])
+
+interface OptionsConfig {
+   data: {
+      results: Options[]
+   }
+   config: { url: string }
+}
 
 interface Options {
    label: string
@@ -49,6 +56,8 @@ interface IPokemonHabitat {
    name: string
    url: string
 }
+const genderAddressRequest = 'gender/'
+const habitatAddressRequest = 'pokemon-habitat/'
 
 const genderSelected = ref<Options>()
 const habitatSelected = ref<Options>()
@@ -58,16 +67,43 @@ let genderOptions = ref<Options[]>([])
 let habitatsOptions = ref<Options[]>([])
 let pokemonsListToSearch: Set<string>
 
-const getOptions = async function () {
-   const responseGender = await requestPokemonApi('gender/') // Hard codé!
-   //  console.log(responseGender)
-   //  console.log(responseGender.data.results)
-   //  genderOptions.value = formatResponse(responseGender.data.results.map((gender: Options) => gender))
-   genderOptions.value = formatResponse(responseGender.data.results)
-   //  console.log(genderOptions.value)
+const getOptions = function () {
+   //?? Est-ce préférable de mettre les 2 requests dans un seule demande Promise.all?
+   const requestAPIList: Promise<OptionsConfig>[] = [api.get(genderAddressRequest), api.get(habitatAddressRequest)]
 
-   const responseHabitats = await requestPokemonApi('pokemon-habitat/')
-   habitatsOptions.value = formatResponse(responseHabitats.data.results.map((habitat: Options) => habitat))
+   Promise.all(requestAPIList)
+      .then((res) => {
+         res.map((response) => {
+            if (response.config.url === genderAddressRequest) {
+               genderOptions.value = formatResponse(response.data.results)
+            }
+            if (response.config.url === habitatAddressRequest) {
+               habitatsOptions.value = formatResponse(response.data.results)
+            }
+         })
+      })
+      .catch((err) => {
+         console.log('err', err)
+      })
+
+   /*
+//?? Ou faire demande séparément puisque juste 2 request?
+   api.get(genderAddressRequest)
+      .then((res) => {
+         genderOptions.value = formatResponse(res.data.results)
+      })
+      .catch((err) => {
+         console.log(err)
+      })
+   api.get(habitatAddressRequest)
+      .then((res) => {
+         habitatsOptions.value = formatResponse(res.data.results)
+      })
+      .catch((err) => {
+         console.log(err)
+      })
+*/
+   //TODO ajouter gestion erreur
 }
 
 const formatResponse = function (arrOptions: Options[]) {
@@ -110,17 +146,28 @@ const submitAdvancedSearch = async function () {
    let habitatPokemonsListName: string[] = []
 
    if (genderSelected.value && genderSelected.value.value !== 'tous') {
-      const response = await requestPokemonApi(formatUrl(genderSelected.value.url))
-      genderPokemonsListName = response.data.pokemon_species_details.map((pokemon: IPokemonGender) => {
-         return pokemon.pokemon_species.name
-      })
+      api.get(formatUrl(genderSelected.value.url))
+         .then((res) => {
+            genderPokemonsListName = res.data.pokemon_species_details.map((pokemon: IPokemonGender) => {
+               return pokemon.pokemon_species.name
+            })
+            console.log('genderPokemonsListName', genderPokemonsListName)
+         })
+         .catch((err) => {
+            console.log(err)
+         })
    }
-
    if (habitatSelected.value && habitatSelected.value.value !== 'tous') {
-      const response = await requestPokemonApi(formatUrl(habitatSelected.value.url))
-      habitatPokemonsListName = response.data.pokemon_species.map((pokemon: IPokemonHabitat) => {
-         return pokemon.name
-      })
+      api.get(formatUrl(habitatSelected.value.url))
+         .then((res) => {
+            habitatPokemonsListName = res.data.pokemon_species.map((pokemon: IPokemonHabitat) => {
+               return pokemon.name
+            })
+            console.log('habitatPokemonsListName', habitatPokemonsListName)
+         })
+         .catch((err) => {
+            console.log(err)
+         })
    }
 
    if (searchOptionSelected.value === 'or') {
